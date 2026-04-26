@@ -65,9 +65,9 @@ Step one_step(State current, Vec advanced) {
         return one_step({t, dt/2, curr}, half);
     }
     if (err < threshold/4) {
-        return {{t+dt/2, dt*2, half}, err};
+        return {{t+dt, dt*2, half_twice}, err};
     }
-    return {{t+dt/2, dt, half}, err};
+    return {{t+dt, dt, half_twice}, err};
 }
 
 void simulate(std::ostream& out, real min_x, State state) {
