@@ -1,7 +1,7 @@
-fall: fall.cpp density.h Makefile
+fall: fall.cpp density.h
 	c++ -Wall -Wextra -pedantic --std=c++20 -O3 -o $@ $<
 
-density.h: density.csv Makefile
+density.h: density.csv
 	echo '#pragma once' >$@
 	echo '' >>$@
 	echo '#include <cmath>' >>$@
@@ -20,6 +20,15 @@ density.h: density.csv Makefile
 out: fall
 	./$< | head -10000 >$@
 
-plot: fall out out.plt
-	gnuplot out.plt -
+plot: out.plt fall out
+	gnuplot $< -
 
+out.png: out.plt fall out
+	gnuplot \
+		-e 'set terminal png truecolor nocrop enhanced butt size 1920,1080 font "arial,18.0"' \
+		-e 'set output "$@"' \
+		$<
+
+.PHONY: clean
+clean:
+	rm -f out.png plot out density.h fall

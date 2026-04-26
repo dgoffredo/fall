@@ -41,15 +41,9 @@ real acceleration(real x) {
     return acceleration(lower_bound, x);
 }
 
-real accel(real r) {
-    // copsign(mag, sgn) -> number with magnitude of mag and sign of sgn
-    return std::copysign(1 / (r*r), -r);
-}
-
 struct Vec {
     real x;
     real xp;
-    // TODO: Could store accel(x) here, but might be faster to recalculate all the time.
 };
 
 struct State {
@@ -114,7 +108,6 @@ void simulate(std::ostream& out, State state) {
     auto& [t, dt, curr]  = state;
     auto& [x, xp] = curr;
     for (;;) {
-        // TODO: store the acceleration value
         Vec advanced{
             .x = x + xp * dt,
             .xp = xp + acceleration(x) * dt
@@ -134,7 +127,7 @@ int main() {
     simulate(std::cout, start);
 }
 
-/* more notes
+/* notes
 
 dt, t, x, xp, xpp,
 or in general:
@@ -164,27 +157,6 @@ is it possible that we oscillate between {dt -> 2*dt} and {dt -> dt/2} infinitel
         - that's probably best
 
 there are optimizations here, but let's start with the simplest code I can manage, at the price of less efficiency
-
-
-*/
-
-/* notes
-
-dr = (r_t + r_tt * dt) * dt = r_t * dt  +  r_tt * dt * dt
-
-suppose there's a max_abs_dr > 0
-Then we want to choose a dt such that abs(dr) is at most max_abs_dr
-
-call dt {such that abs(dr) = max_abs_dr} max_dt > 0
-
-max_abs_dr = abs[r_t * dt_max  +  r_tt * dt_max * dt_max]
-
-quadratic. let's ignore abs for now.
-a = r_tt
-b = r_t
-c = -max_abs_dr
-
-dt_max = [-r_t +- sqrt(r_t * r_t  +  4 * r_tt * max_abs_dr)] / (2 * r_tt)
 
 */
 

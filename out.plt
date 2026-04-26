@@ -1,4 +1,4 @@
-set title 'Displacement versus Time'
+set title 'Displacement versus Time as You Fall Through the Center of the Earth'
 set ylabel 'Distance from Center of the Earth (kilometers)'
 set xlabel 'Time Elapsed (minutes)'
 
