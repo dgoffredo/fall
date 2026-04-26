@@ -1,8 +1,45 @@
+#include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <numbers>
 #include <ostream>
 
+#include "density.h"
+
 using real = long double;
+
+real mass_below(const EarthRecord *lower_bound, real r) {
+    if (lower_bound == std::end(earth_table)) {
+        return (lower_bound - 1)->m;
+    }
+
+    const real R = (lower_bound - 1)->r;
+    const real M = (lower_bound - 1)->m;
+    const real ρ = (lower_bound - 1)->ρ;
+    const real μ = lower_bound->μ;
+
+    constexpr auto π = std::numbers::pi_v<real>;
+    return M + π*μ*(r*r*r*r - R*R*R*R) + 4*π/3*(ρ - μ*R)*(r*r*r - R*R*R);
+}
+
+real acceleration(const EarthRecord *lower_bound, real x) {
+    const real M = mass_below(lower_bound, std::abs(x));
+    constexpr real G = 6.67430e-11;
+    return std::copysign(M*G / (x*x), -x);
+}
+
+// TODO: optimize by keeping the pointer around
+real acceleration(real x) {
+    const EarthRecord *lower_bound = std::lower_bound(
+        std::begin(earth_table),
+        std::end(earth_table),
+        std::abs(x),
+        [](const EarthRecord& record, real r) {
+        return record.r < r;
+    });
+
+    return acceleration(lower_bound, x);
+}
 
 real accel(real r) {
     // copsign(mag, sgn) -> number with magnitude of mag and sign of sgn
@@ -44,7 +81,7 @@ std::ostream& operator<<(std::ostream& out, Step step) {
 Step one_step(State current, Vec advanced) {
     const auto [t, dt, curr] = current;
     const auto [x, xp] = curr;
-    const real xpp = accel(x);
+    const real xpp = acceleration(x);
     // Calculate the new (x, xp) when advanced by dt/2.
     // Then advance that result another dt/2.
     // Compare this result with `advanced` by calculating an "error".
@@ -57,7 +94,7 @@ Step one_step(State current, Vec advanced) {
     };
     const Vec half_twice{
         .x = half.x + half.xp * dt/2,
-        .xp = half.xp + accel(half.x) * dt/2
+        .xp = half.xp + acceleration(half.x) * dt/2
     };
     const real err = error(current.current, advanced, half_twice);
     constexpr real threshold = 1e-6;
@@ -70,17 +107,17 @@ Step one_step(State current, Vec advanced) {
     return {{t+dt, dt, half_twice}, err};
 }
 
-void simulate(std::ostream& out, real min_x, State state) {
+void simulate(std::ostream& out, State state) {
     // initial point: `state` with zero error by definition
     out << Step{.next=state, .error=0};
 
     auto& [t, dt, curr]  = state;
     auto& [x, xp] = curr;
-    while (x >= min_x) {
-        // TODO: store the accel value
+    for (;;) {
+        // TODO: store the acceleration value
         Vec advanced{
             .x = x + xp * dt,
-            .xp = xp + accel(x) * dt
+            .xp = xp + acceleration(x) * dt
         };
         const Step step = one_step(state, advanced);
         state = step.next;
@@ -92,9 +129,9 @@ int main() {
     const State start{
         .t = 0,
         .dt = 0.001,
-        .current = Vec{.x = 1.0, .xp = 0.0 }
+        .current = Vec{.x = 6371000, .xp = 0.0 }
     };
-    simulate(std::cout, 1e-6, start);
+    simulate(std::cout, start);
 }
 
 /* more notes
