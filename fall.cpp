@@ -48,9 +48,9 @@ Step one_step(State current, Vec advanced) {
     // Calculate the new (x, xp) when advanced by dt/2.
     // Then advance that result another dt/2.
     // Compare this result with `advanced` by calculating an "error".
-    // If the error is acceptable, return advanced.
+    // If the error is acceptable, return the two-step result.
     // If the error is too large, recurse with dt/2 (using some values we just calculated).
-    // If the error is too small, return advanced but adjust dt -> 2*dt.
+    // If the error is too small, return the two-step but adjust dt -> 2*dt.
     const Vec half{
         .x = x + xp * dt/2,
         .xp = xp + xpp * dt/2
