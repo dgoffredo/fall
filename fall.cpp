@@ -25,8 +25,8 @@ real error(Vec current, Vec coarse, Vec fine) {
     constexpr real ε_x = 1e-6;
     constexpr real ε_xp = 1e-6;
     return std::hypot(
-        (coarse.x - fine.x) / (ε_x  + current.x),
-        (coarse.xp - fine.xp) / (ε_xp  + current.xp));
+        (coarse.x - fine.x) / (ε_x  + std::abs(current.x)),
+        (coarse.xp - fine.xp) / (ε_xp  + std::abs(current.xp)));
 }
 
 struct Step {
