@@ -1,5 +1,9 @@
 fall: fall.cpp density.h
-	c++ -Wall -Wextra -pedantic --std=c++20 -O3 -o $@ $<
+	# c++ -Wall -Wextra -pedantic --std=c++20 -O3 -o $@ $<
+	c++ -Wall -Wextra -pedantic --std=c++20 -g -O3 -o $@ $<
+
+jsontime: jsontime.cpp
+	c++ -Wall -Wextra -pedantic --std=c++20 -O2 -o $@ $<
 
 density.h: density.csv
 	echo '#pragma once' >$@

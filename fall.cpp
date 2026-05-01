@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <numbers>
 #include <ostream>
@@ -28,16 +29,29 @@ real acceleration(const EarthRecord *lower_bound, real x) {
     return std::copysign(M*G / (x*x), -x);
 }
 
-// TODO: optimize by keeping the pointer around
-real acceleration(real x) {
-    const EarthRecord *lower_bound = std::lower_bound(
-        std::begin(earth_table),
-        std::end(earth_table),
-        std::abs(x),
-        [](const EarthRecord& record, real r) {
-        return record.r < r;
-    });
+const EarthRecord *radius_lower_bound(real r) {
+    // linear fit from gnuplot
+    constexpr real a = 7.85178e-05;
+    constexpr real b = -0.449567;
+    const auto guess = std::min(std::size_t(std::ceil(a*r + b)), std::size(earth_table));
 
+    const EarthRecord *record = std::begin(earth_table) + guess;
+
+    // In case we overshot.
+    while (record != std::begin(earth_table) && !((record - 1)->r < r)) {
+        --record;
+    }
+
+    // In case we undershot.
+    while (record != std::end(earth_table) && record->r < r) {
+        ++record;
+    }
+
+    return record;
+}
+
+real acceleration(real x) {
+    const EarthRecord *lower_bound = radius_lower_bound(std::abs(x));
     return acceleration(lower_bound, x);
 }
 
@@ -52,24 +66,24 @@ struct State {
     Vec current;
 };
 
-real error(Vec current, Vec coarse, Vec fine) {
+real error_squared(Vec current, Vec coarse, Vec fine) {
     constexpr real ε_x = 1e-6;
     constexpr real ε_xp = 1e-6;
-    return std::hypot(
-        (coarse.x - fine.x) / (ε_x  + std::abs(current.x)),
-        (coarse.xp - fine.xp) / (ε_xp  + std::abs(current.xp)));
+    const auto err_x = (coarse.x - fine.x) / (ε_x  + std::abs(current.x));
+    const auto err_xp = (coarse.xp - fine.xp) / (ε_xp  + std::abs(current.xp));
+    return err_x*err_x + err_xp*err_xp;
 }
 
 struct Step {
     State next;
-    real error;
+    real error_squared;
 };
 
 std::ostream& operator<<(std::ostream& out, Step step) {
-    const auto [state, error] = step;
+    const auto [state, error_squared] = step;
     const auto [t, dt, current] = state;
     const auto [x, xp] = current;
-    return out << t << ' ' << x << ' ' << xp << ' ' << dt << ' ' << error << '\n';
+    return out << t << ' ' << x << ' ' << xp << ' ' << dt << ' ' << error_squared << '\n';
 }
 
 Step one_step(State current, Vec advanced) {
@@ -90,20 +104,20 @@ Step one_step(State current, Vec advanced) {
         .x = half.x + half.xp * dt/2,
         .xp = half.xp + acceleration(half.x) * dt/2
     };
-    const real err = error(current.current, advanced, half_twice);
+    const real err_2 = error_squared(current.current, advanced, half_twice);
     constexpr real threshold = 1e-6;
-    if (err > threshold) {
+    if (err_2 > threshold*threshold) {
         return one_step({t, dt/2, curr}, half);
     }
-    if (err < threshold/4) {
-        return {{t+dt, dt*2, half_twice}, err};
+    if (err_2 < threshold*threshold/16) {
+        return {{t+dt, dt*2, half_twice}, err_2};
     }
-    return {{t+dt, dt, half_twice}, err};
+    return {{t+dt, dt, half_twice}, err_2};
 }
 
 void simulate(std::ostream& out, State state) {
     // initial point: `state` with zero error by definition
-    out << Step{.next=state, .error=0};
+    out << Step{.next=state, .error_squared=0};
 
     auto& [t, dt, curr]  = state;
     auto& [x, xp] = curr;
@@ -122,7 +136,7 @@ int main() {
     const State start{
         .t = 0,
         .dt = 0.001,
-        .current = Vec{.x = 6371000, .xp = 0.0 }
+        .current = Vec{.x = 6371000, .xp = 0 }
     };
     simulate(std::cout, start);
 }
