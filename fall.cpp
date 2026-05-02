@@ -163,14 +163,5 @@ suppose we decide we need to take dt -> dt/2
 suppose we decide we can afford to take dt -> 2*dt
     - we already calculated the dt step, so we can reuse that as the "little step" in the recursion
 
-is it possible that we oscillate between {dt -> 2*dt} and {dt -> dt/2} infinitely?
-    - not sure, but we can prevent it by falling back to the smaller dt instead of recalculating
-    - for that matter, we could oscillate the other way as well
-    - we need a state: "just increased dt," "just decreased dt," and "neither"
-    - alternatively, could binary search for a dt that yields an error in the range [threshold/4, threshold]
-        - that's probably best
-
-there are optimizations here, but let's start with the simplest code I can manage, at the price of less efficiency
-
 */
 

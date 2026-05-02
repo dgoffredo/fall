@@ -1,5 +1,4 @@
 fall: fall.cpp density.h
-	# c++ -Wall -Wextra -pedantic --std=c++20 -O3 -o $@ $<
 	c++ -Wall -Wextra -pedantic --std=c++20 -g -O3 -o $@ $<
 
 jsontime: jsontime.cpp
